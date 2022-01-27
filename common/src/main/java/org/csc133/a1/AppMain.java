@@ -1,8 +1,11 @@
 package org.csc133.a1;
 
 import static com.codename1.ui.CN.*;
+
+import com.codename1.charts.util.ColorUtil;
 import com.codename1.system.Lifecycle;
 import com.codename1.ui.*;
+import com.codename1.ui.geom.Point;
 import com.codename1.ui.layouts.*;
 import com.codename1.io.*;
 import com.codename1.ui.plaf.*;
@@ -13,12 +16,46 @@ import com.codename1.ui.util.Resources;
  * of building native mobile applications using Java.
  */
 public class AppMain extends Lifecycle {
-    @Override
+    private Form current;
+    private Resources theme;
+    public void init(Object context) {
+        updateNetworkThreadCount(2);
+
+        theme = UIManager.initFirstTheme("/theme");
+
+        Toolbar.setGlobalToolbar(true);
+        Log.bindCrashProtection(true);
+        addNetworkErrorListener(err -> {
+            err.consume();
+            if(err.getError() != null) {
+                Log.e(err.getError());
+            }
+            Log.sendLogAsync();
+            Dialog.show("Connection error", "There was a network error" + err);
+        });
+    }
+/*    @Override
     public void runApp() {
         new Game();
+    }*/
+    public void start(){
+        if(current != null){
+            current.show();
+            return;
+        }
+        new Game().show();
     }
-
+    public void stop(){
+        current = getCurrentForm();
+        if(current instanceof Dialog) {
+            ((Dialog)current).dispose();
+            current = getCurrentForm();
+        }
+    }
+    public void destroy(){
+    }
 }
+
 class Game extends Form implements Runnable{
     private GameWorld gw;
 
@@ -27,23 +64,61 @@ class Game extends Form implements Runnable{
     }
     @Override
     public void run() {
-
+        repaint();
     }
     public void paint(Graphics g){
         super.paint(g);
+        gw.draw(g);
     }
 }
 
 class GameWorld{
+    Helipad helipad;
+    River river;
 
+    public GameWorld(){
+        river = new River();
+        helipad = new Helipad();
+    }
+
+    void draw(Graphics g){
+        helipad.draw(g);
+        river.draw(g);
+    }
 }
 
 class River {
+    int width;
+    int top;
+    int bottom;
 
+    public River(){
+        width = Display.getInstance().getDisplayWidth();
+        top = Display.getInstance().getDisplayHeight()/6;
+        bottom = Display.getInstance().getDisplayHeight()/5;
+
+    }
+    void draw(Graphics g) {
+        g.setColor(ColorUtil.BLUE);
+        g.fillRect(0, top, width, bottom);
+    }
 }
 
 class Helipad {
+    int locationX, locationY;
+    int size;
+    public Helipad(){
+        size = 250;
 
+        locationX = Display.getInstance().getDisplayWidth()/2 - size/2;
+        locationY = Display.getInstance().getDisplayHeight()/2 + size;
+    }
+    void draw(Graphics g){
+        g.setColor(ColorUtil.WHITE);
+        g.drawArc(locationX + 25, locationY + 25, size - 50, size - 50, 0, 360);
+        g.drawRect(locationX, locationY, size, size,5);
+
+    }
 }
 
 class Fire {
