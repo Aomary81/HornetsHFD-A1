@@ -39,7 +39,50 @@ class Game extends Form implements Runnable{
         UITimer timer = new UITimer(this);
         timer.schedule(20, true, this);
 
+        // Exit Key
         addKeyListener('Q', new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent evt) {
+                gw.quit();
+            }
+        });
+        //Left Arrow
+        addKeyListener(-93, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent evt) {
+                gw.quit();
+            }
+        });
+        // Right Arrow
+        addKeyListener(-94, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent evt) {
+                gw.quit();
+            }
+        });
+        // Up Arrow
+        addKeyListener(-91, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent evt) {
+                gw.quit();
+            }
+        });
+        // Down Arrow
+        addKeyListener(-92, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent evt) {
+                gw.quit();
+            }
+        });
+        // dump water
+        addKeyListener('f', new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent evt) {
+                gw.quit();
+            }
+        });
+        // drink water
+        addKeyListener('d', new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent evt) {
                 gw.quit();
@@ -60,6 +103,7 @@ class GameWorld{
     private Helipad helipad;
     private River river;
     private Fire fire;
+    private Helicopter helicopter;
 
     public GameWorld(){
         init();
@@ -68,11 +112,13 @@ class GameWorld{
         helipad = new Helipad();
         river = new River();
         fire = new Fire();
+        helicopter = new Helicopter();
     }
     void draw(Graphics g){
         helipad.draw(g);
         river.draw(g);
         fire.draw(g);
+        helicopter.draw(g);
     }
 
     public void quit() {
@@ -120,26 +166,41 @@ class Helipad {
 
 class Fire {
     private Point location1, location2, location3;
-    private int fireSize;
+    private int fireSize1, fireSize2, fireSize3;
     Random r;
     public Fire(){
         r = new Random();
-        fireSize = 25 + r.nextInt(400);
-        location1 = new Point(r.nextInt(Display.getInstance().getDisplayWidth()/3), r.nextInt(Display.getInstance().getDisplayHeight()/3));
-        location2 = new Point(Display.getInstance().getDisplayWidth()/2 + r.nextInt(Display.getInstance().getDisplayWidth()/2), r.nextInt(Display.getInstance().getDisplayHeight()/3));
-        location3 = new Point(r.nextInt(Display.getInstance().getDisplayWidth()), Display.getInstance().getDisplayHeight()/2 + r.nextInt(Display.getInstance().getDisplayHeight()/2));
+        fireSize1 = 25 + r.nextInt(400);
+        fireSize2 = 25 + r.nextInt(400);
+        fireSize3 = 25 + r.nextInt(400);
+        location1 = new Point(fireSize1 + r.nextInt(Display.getInstance().getDisplayWidth()/3 - fireSize1), fireSize1 + r.nextInt(Display.getInstance().getDisplayHeight()/3 - fireSize1));
+        location2 = new Point(fireSize2 + Display.getInstance().getDisplayWidth()/2 + r.nextInt(Display.getInstance().getDisplayWidth()/2 - fireSize2), fireSize2 + r.nextInt(Display.getInstance().getDisplayHeight()/3 - fireSize2));
+        location3 = new Point(fireSize3 + r.nextInt(Display.getInstance().getDisplayWidth()), fireSize3 + Display.getInstance().getDisplayHeight()/2 + r.nextInt(Display.getInstance().getDisplayHeight()/2 - (2 * fireSize3)));
 
     }
 
     void draw(Graphics g){
         g.setColor(ColorUtil.rgb(255, 0, 0));
-        g.fillArc(location1.getX(), location1.getY(), fireSize/2, fireSize/2, 0, 360);
-        g.fillArc(location2.getX(), location2.getY(), fireSize/2, fireSize/2, 0, 360);
-        g.fillArc(location2.getX(), location3.getY(), fireSize/2, fireSize/2, 0, 360);
+        g.fillArc(location1.getX(), location1.getY(), fireSize1/2, fireSize1/2, 0, 360);
+        g.fillArc(location2.getX(), location2.getY(), fireSize2/2, fireSize2/2, 0, 360);
+        g.fillArc(location2.getX(), location3.getY(), fireSize3/2, fireSize3/2, 0, 360);
     }
 
 }
 
 class Helicopter {
+    private Point location;
+    private int heliSize, tailSize;
+    public Helicopter(){
+        heliSize = 50;
+        tailSize = 100;
+        location = new Point(Display.getInstance().getDisplayWidth()/2, Display.getInstance().getDisplayHeight() - 210);
+    }
 
+    void draw(Graphics g){
+        g.setColor(ColorUtil.rgb(255, 255, 0));
+        g.fillArc(location.getX() - heliSize/2, location.getY() - heliSize/2, heliSize, heliSize, 0, 360);
+        g.setColor(ColorUtil.GREEN);
+        g.drawRect(location.getX() , location.getY() + heliSize/2, 5, heliSize);
+    }
 }
