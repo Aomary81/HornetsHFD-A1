@@ -40,7 +40,7 @@ class Game extends Form implements Runnable{
     public Game(){
         gw = new GameWorld();
         UITimer timer = new UITimer(this);
-        timer.schedule(500, true, this);
+        timer.schedule(100, true, this);
 
         // Exit Key
         addKeyListener('Q', new ActionListener() {
@@ -49,6 +49,7 @@ class Game extends Form implements Runnable{
                 gw.quit();
             }
         });
+
         //Left Arrow
         addKeyListener(-93, new ActionListener() {
             @Override
@@ -56,6 +57,7 @@ class Game extends Form implements Runnable{
                 gw.turnLeft();
             }
         });
+
         // Right Arrow
         addKeyListener(-94, new ActionListener() {
             @Override
@@ -64,6 +66,7 @@ class Game extends Form implements Runnable{
                 gw.turnRight();
             }
         });
+
         // Up Arrow
         addKeyListener(-91, new ActionListener() {
             @Override
@@ -72,35 +75,36 @@ class Game extends Form implements Runnable{
                 gw.speedUp();
             }
         });
+
         // Down Arrow
         addKeyListener(-92, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent evt) {
-
                 gw.slowDown();
             }
         });
+
         // dump water
         addKeyListener('f', new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent evt) {
-                gw.quit();
             }
         });
+
         // drink water
         addKeyListener('d', new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent evt) {
-                gw.quit();
             }
         });
     }
+
     @Override
     public void run() {
         gw.fireGrowth();
-
         repaint();
     }
+
     public void paint(Graphics g){
         super.paint(g);
         gw.draw(g);
@@ -114,9 +118,9 @@ class GameWorld{
     Helicopter helicopter;
 
     public GameWorld(){
-
         init();
     }
+
     void init(){
         helipad = new Helipad();
         river = new River();
@@ -126,26 +130,24 @@ class GameWorld{
 
     void draw(Graphics g){
         g.setColor(ColorUtil.BLACK);
-        g.fillRect(0, 0, Display.getInstance().getDisplayWidth(),
+        g.clearRect(0, 0, Display.getInstance().getDisplayWidth(),
                 Display.getInstance().getDisplayHeight());
         helipad.draw(g);
         river.draw(g);
         fire.draw(g);
         helicopter.draw(g);
     }
+
     void fireGrowth(){
-        fire.fireSize1 = fire.fireSize1 + fire.r.nextInt(2);
-        fire.fireSize2 = fire.fireSize2 + fire.r.nextInt(2);
-        fire.fireSize3 = fire.fireSize3 + fire.r.nextInt(2);
-        helicopter.fuel = helicopter.fuel - 200;
-        while(helicopter.fuel <= 0){
-            quit();
-        }
+        fire.fireSpread();
+        helicopter.move();
+        helicopter.fuelConsumption();
     }
 
-    void turnLeft(){
+    void turnLeft() {
         helicopter.turningL();
     }
+
     void turnRight() {
         helicopter.turningR();
     }
@@ -154,15 +156,13 @@ class GameWorld{
         helicopter.accelerate();
     }
 
-    public void slowDown() {
+    public void slowDown()    {
         helicopter.decelerate();
     }
 
     public void quit() {
         Display.getInstance().exitApplication();
     }
-
-
 }
 
 class River {
@@ -185,6 +185,7 @@ class River {
 class Helipad {
     Point locationCenter;
     int squareSize, circleSize, sqTopX, cirTopX, sqTopY, cirTopY;
+
     public Helipad(){
         squareSize = 200;
         circleSize = 150;
@@ -193,40 +194,40 @@ class Helipad {
         sqTopY = locationCenter.getY() - squareSize/2;
         cirTopX = locationCenter.getX() - circleSize/2;
         cirTopY = locationCenter.getY() - circleSize/2;
-
     }
+
     void draw(Graphics g){
         g.setColor(ColorUtil.GRAY);
         g.drawArc(locationCenter.getX() - circleSize/2, locationCenter.getY() - circleSize/2, circleSize, circleSize, 0, 360);
         g.drawRect(locationCenter.getX() - squareSize/2, locationCenter.getY() - squareSize/2, squareSize, squareSize,5);
-
     }
 }
 
 class Fire {
     Point location1, location2, location3;
     int fireSize1, fireSize2, fireSize3;
-    Random r;
+    Random r1, r2, r3;
+
     public Fire(){
-        r = new Random();
-        fireSize1 = 25 + r.nextInt(400);
-        fireSize2 = 25 + r.nextInt(400);
-        fireSize3 = 25 + r.nextInt(400);
+        r1 = new Random();
+        r2 = new Random();
+        r3 = new Random();
+        fireSize1 = 25 + r1.nextInt(400);
+        fireSize2 = 25 + r2.nextInt(400);
+        fireSize3 = 25 + r3.nextInt(400);
         location1 = new Point(Display.getInstance().getDisplayWidth()/4 +
-                r.nextInt(Display.getInstance().getDisplayWidth()/4),
+                r1.nextInt(Display.getInstance().getDisplayWidth()/4),
                 Display.getInstance().getDisplayHeight()/6 +
-                        r.nextInt(Display.getInstance().getDisplayHeight()/12));
+                        r1.nextInt(Display.getInstance().getDisplayHeight()/12));
         location2 = new Point(Display.getInstance().getDisplayWidth()/2 +
-                r.nextInt(Display.getInstance().getDisplayWidth()/4),
+                r2.nextInt(Display.getInstance().getDisplayWidth()/4),
                 Display.getInstance().getDisplayHeight()/6 +
-                        r.nextInt(Display.getInstance().getDisplayHeight()/12));
+                        r2.nextInt(Display.getInstance().getDisplayHeight()/12));
         location3 = new Point(Display.getInstance().getDisplayWidth()/4 +
-                r.nextInt(Display.getInstance().getDisplayWidth()/4),
+                r3.nextInt(Display.getInstance().getDisplayWidth()/4),
                 Display.getInstance().getDisplayHeight()/2 +
-                        r.nextInt(Display.getInstance().getDisplayHeight()/8 ));
-
+                        r3.nextInt(Display.getInstance().getDisplayHeight()/8 ));
     }
-
 
     void draw(Graphics g){
         g.setColor(ColorUtil.rgb(255, 0, 0));
@@ -240,12 +241,16 @@ class Fire {
         g.drawString( "" + fireSize3, location3.getX() + fireSize3/2, location3.getY() + fireSize3/2);
     }
 
-
+    public void fireSpread(){
+        fireSize1 = fireSize1 + r1.nextInt(2);
+        fireSize2 = fireSize2 + r2.nextInt(2);
+        fireSize3 = fireSize3 + r3.nextInt(2);
+    }
 }
 
 class Helicopter {
     Point locationHeli, locationTail, center, turning;
-    int heliSize, tailSize, fuel, rX, rY, currentIndex, speed, x2, y2;
+    int heliSize, tailSize, fuel, rX, rY, currentIndex, speed, x2, y2, water;
     ArrayList<Point> turn;
     public Helicopter(){
         heliSize = 50;
@@ -256,14 +261,50 @@ class Helicopter {
         fuel = 22000;
         turn = new ArrayList<>();
         currentIndex = 0;
-        speed = 0;
+    }
+    public void move(){
+        if(speed > 0 && speed <= 10) {
+            if ((center.getX() == x2) && (center.getY() > y2)) {
+                center.setY(center.getY() - speed);
+                y2 = y2 -  speed;
+            } else if ((center.getX() == x2) && (center.getY() < y2)) {
+                center.setY(center.getY() + speed);
+                y2 = y2 + speed;
+            } else if ((center.getY() == y2) && (center.getX() > x2)) {
+                center.setX(center.getX() - speed);
+                x2 = x2 - speed;
+            } else if ((center.getY() == y2) && (center.getX() < x2)) {
+                center.setX(center.getX() + speed);
+                x2 = x2 + speed;
+            } else if ((center.getX() > x2) && (center.getY() > y2)) {
+                center.setY(center.getY() - speed);
+                y2 = y2 - speed;
+                center.setX(center.getX() - speed);
+                x2 = x2 - speed;
+            } else if ((center.getX() > x2) && (center.getY() < y2)) {
+                center.setY(center.getY() + speed);
+                y2 = y2 + speed;
+                center.setX(center.getX() - speed);
+                x2 = x2 - speed;
+            } else if ((center.getX() < x2) && (center.getY() > y2)) {
+                center.setY(center.getY() - speed);
+                y2 = y2 - speed;
+                center.setX(center.getX() + speed);
+                x2 = x2 + speed;
+            } else if ((center.getX() < x2) && (center.getY() < y2)) {
+                center.setY(center.getY() + speed);
+                y2 = y2 + speed;
+                center.setX(center.getX() + speed);
+                x2 = x2 + speed;
+            }
+        }
     }
 
     void draw(Graphics g) {
         g.setColor(ColorUtil.rgb(255, 255, 0));
         g.fillArc(center.getX() - heliSize / 2, center.getY() - heliSize / 2, heliSize, heliSize, 0, 360);
         for (int i = 1; i < 25; i++) {
-            double angle = Math.toRadians(360 / 24 * i - 90);
+            double angle = Math.toRadians(360 / 24 * i - 105);
             rX = (int) ((tailSize * Math.cos(angle)));
             rY = (int) ((tailSize * Math.sin(angle)));
             turning = new Point(rX, rY);
@@ -275,8 +316,8 @@ class Helicopter {
         g.drawLine(center.getX(), center.getY(), x2, y2);
         g.setColor(ColorUtil.WHITE);
         g.setFont(Font.createSystemFont(FACE_MONOSPACE, STYLE_BOLD, SIZE_MEDIUM));
-        g.drawString("fuel: " + fuel, locationHeli.getX() + heliSize, locationHeli.getY() + heliSize);
-
+        g.drawString("fuel: " + fuel, center.getX() + heliSize, center.getY() + heliSize);
+        g.drawString("water: " + water, center.getX() + heliSize, center.getY() + 20 + heliSize);
        }
 
     public void turningR() {
@@ -285,36 +326,41 @@ class Helicopter {
             currentIndex = 0;
         }
     }
+
     public void turningL(){
         if(currentIndex == 0){
             currentIndex = turn.size() - 1;
         }
         currentIndex--;
-
     }
+
     public void accelerate(){
-/*        if(speed >= 0 && speed <10) {
+        if(speed >= 0 && speed < 10) {
             speed++;
         }
-        while(speed > 0 && speed <=10){
-            if(center.getX() == x2 && y2 > center.getY()){
-                center.setY(center.getY() + speed);
-                y2 = y2 + speed;
-            }
-            else if(center.getY() == y2 && x2 > center.getX()) {
-                center.setX(center.getX() + speed);
-                x2 = x2 + speed;
-            }
-            else if(center.getX() == x2 && y2 < center.getY()) {
-                center.setY(center.getY() - speed);
-                y2 = y2 - speed;
-            }
-            else if(center.getY() == y2 && x2 < center.getX()){
-                center.setX(center.getX() - speed);
-                x2 = x2 - speed;
-            }
-        }*/
+        else{
+            speed = 10;
+        }
     }
+
     public void decelerate() {
+        if(speed > 0) {
+            speed--;
+        }
+        else{
+            speed = 0;
+        }
     }
+
+    public void fuelConsumption(){
+            if (speed == 0) {
+                fuel = fuel - 10;
+            }
+            else {
+                fuel = fuel - (10 * speed);
+            }
+            if(fuel <= 0) {
+                fuel = 0;
+            }
+        }
 }
