@@ -57,7 +57,7 @@ class Game extends Form implements Runnable{
             }
         });
 
-        //Left Arrow
+        //Left Arrow used to turn the helicopter left
         addKeyListener(-93, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent evt) {
@@ -65,7 +65,7 @@ class Game extends Form implements Runnable{
             }
         });
 
-        // Right Arrow
+        // Right Arrow used to turn the helicopter right
         addKeyListener(-94, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent evt) {
@@ -74,7 +74,7 @@ class Game extends Form implements Runnable{
             }
         });
 
-        // Up Arrow
+        // Up Arrow to speed up the helicopter
         addKeyListener(-91, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent evt) {
@@ -83,7 +83,7 @@ class Game extends Form implements Runnable{
             }
         });
 
-        // Down Arrow
+        // Down Arrow to slow down and stop the helicopter
         addKeyListener(-92, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent evt) {
@@ -128,7 +128,6 @@ class GameWorld{
     final Button exit = new Button("Exit");
     Helipad helipad;
     River river;
-    Fire fire;
     Helicopter helicopter;
     int water, fuel;
     ArrayList<Fire> fires;
@@ -140,9 +139,11 @@ class GameWorld{
     void init(){
         helipad = new Helipad();
         river = new River();
-        fire = new Fire();
         helicopter = new Helicopter();
         fires = new ArrayList<>();
+        for(int i = 0; i < 3; i++) {
+            fires.add(new Fire());
+        }
     }
 
     void draw(Graphics g){
@@ -150,57 +151,58 @@ class GameWorld{
                 Display.getInstance().getDisplayHeight());
         helipad.draw(g);
         river.draw(g);
-        fires.get(0).draw(g);
-        fires.get(1).draw(g);
-        fires.get(2).draw(g);
+        for(int i = 0; i < 3; i++) {
+            fires.get(i).draw(g);
+        }
         helicopter.draw(g);
     }
 
     void tick(){
         for(int i = 0; i < 3; i++) {
-            fires.add(new Fire());
+            fires.get(i).grow();
         }
-
-        fires.get(0).grow();
-        fires.get(1).grow();
-        fires.get(2).grow();
-
         helicopter.move();
         fuel = helicopter.fuelConsumption();
         water = helicopter.getWaterLevel();
         if(fuel <= 0){
             gameOver();
         }
-
+        if(fires.isEmpty() && helicopter.isOverHelipad(helipad)){
+            youWin();
+        }
     }
 
+    // method to call helicopter command turn left
     void turnLeft() {
         helicopter.turningL();
     }
-
+    // method to call helicopter command turn right
     void turnRight() {
         helicopter.turningR();
     }
-
+    // method to call helicopter command to go forward and increase speed
     void speedUp() {
         helicopter.accelerate();
     }
-
+    // method to call helicopter command to slow down and stop
     void slowDown()    {
         helicopter.decelerate();
     }
 
+    // Method for filling the water tank on helicopter
     void drink(){
         if(helicopter.overRiver(river)) {
             helicopter.drinkWater();
         }
     }
 
+    // Method for dropping water on fire
     void fight() {
+        ArrayList<Fire> deadFlames = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             if (helicopter.overFire1(fires.get(i))) {
                 if (fires.get(i).getFireSize1() < helicopter.getWaterLevel()) {
-                    fires.remove(i);
+                    deadFlames.add(fires.get(i));
                 }
             }
 
@@ -208,6 +210,7 @@ class GameWorld{
         helicopter.fightFire();
     }
 
+    // Losing condition Dialog Window
     void gameOver(){
         restart.addActionListener(new ActionListener() {
             @Override
@@ -227,16 +230,34 @@ class GameWorld{
         dlg.add(BorderLayout.WEST, restart);
         dlg.add(BorderLayout.CENTER, exit);
         dlg.show();
-
-
-
     }
 
+    // Win condition dialog window
+    private void youWin() {
+        restart.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+
+            }
+        });
+        exit.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                quit();
+
+            }
+        });
+        Dialog dlg = new Dialog("GAME OVER! YOU WIN!!! Your Score was: " + fuel);
+        dlg.setLayout(new BorderLayout());
+        dlg.add(BorderLayout.WEST, restart);
+        dlg.add(BorderLayout.CENTER, exit);
+        dlg.show();
+    }
+
+    // Method for exiting the game
     void quit() {
         Display.getInstance().exitApplication();
     }
-
-
 }
 
 class River {
@@ -251,31 +272,40 @@ class River {
         top = location.getY() * 4/5;
         bottom = location.getY() * 2/5;
     }
+
+    // Returns the Top and Bottom shoreline of River
+    int getRiverNorth(){
+        return top;
+    }
+
+    int getRiverSouth(){
+        return top + bottom;
+    }
+
     void draw(Graphics g) {
         g.setColor(ColorUtil.BLUE);
         g.drawRect(start, top, end, bottom);
     }
-    int getRiverNorth(){
-        return top;
-    }
-    int getRiverSouth(){
-        return top + bottom;
-    }
+
 }
 
 class Helipad {
     Point locationCenter;
-    int squareSize, circleSize, sqTopX, cirTopX, sqTopY, cirTopY;
+    int squareSize, circleSize;
 
     public Helipad(){
         squareSize = 200;
         circleSize = 150;
         locationCenter = new Point(Display.getInstance().getDisplayWidth()/2,
                 Display.getInstance().getDisplayHeight() - squareSize - 10 );
-        sqTopX = locationCenter.getX() - squareSize/2;
-        sqTopY = locationCenter.getY() - squareSize/2;
-        cirTopX = locationCenter.getX() - circleSize/2;
-        cirTopY = locationCenter.getY() - circleSize/2;
+    }
+    // Get Helipads X and Y coordinates
+    public int getHelipadX() {
+        return locationCenter.getX();
+    }
+
+    public int getHelipadY() {
+        return locationCenter.getY();
     }
 
     void draw(Graphics g){
@@ -287,6 +317,7 @@ class Helipad {
                 locationCenter.getY() - squareSize/2,
                 squareSize, squareSize,5);
     }
+
 }
 
 class Fire {
@@ -302,24 +333,16 @@ class Fire {
                 r.nextInt(Display.getInstance().getDisplayHeight())/3);
             }
 
-    void draw(Graphics g) {
-        g.setColor(ColorUtil.rgb(255, 0, 0));
-        g.fillArc(location1.getX() - fireSize1/4, location1.getY() - fireSize1/4,
-                    fireSize1 / 2, fireSize1 / 2,
-                    0, 360);
-        g.setColor(ColorUtil.WHITE);
-        g.setFont(Font.createSystemFont(FACE_MONOSPACE, STYLE_BOLD, SIZE_MEDIUM));
-        g.drawString("" + fireSize1, location1.getX() + fireSize1 / 4,
-                    location1.getY() + fireSize1/4);
-    }
-
+    // Increase and decrease fire's size
     void grow(){
         fireSize1 = fireSize1 + r.nextInt(5);
     }
+
     int shrink1(int water) {
         return fireSize1 = fireSize1 - (water/4);
     }
 
+    // Gets the Point coordinate for Fires X and Y and the fire's size
     int getFire1X() {
         return location1.getX() + fireSize1;
     }
@@ -329,6 +352,18 @@ class Fire {
     int getFireSize1(){
         return fireSize1;
     }
+
+    void draw(Graphics g) {
+        g.setColor(ColorUtil.rgb(255, 0, 0));
+        g.fillArc(location1.getX() - fireSize1/4, location1.getY() - fireSize1/4,
+                fireSize1 / 2, fireSize1 / 2,
+                0, 360);
+        g.setColor(ColorUtil.WHITE);
+        g.setFont(Font.createSystemFont(FACE_MONOSPACE, STYLE_BOLD, SIZE_MEDIUM));
+        g.drawString("" + fireSize1, location1.getX() + fireSize1 / 4,
+                location1.getY() + fireSize1/4);
+    }
+
 }
 
 class Helicopter {
@@ -347,8 +382,17 @@ class Helicopter {
                 Display.getInstance().getDisplayHeight() - 210);
         turn = new ArrayList<>();
         currentIndex = 0;
-        fuel = 250;
+        fuel = 25000;
+        for (int i = 1; i < 25; i++) {
+            double angle = Math.toRadians(360 / 24 * i - 105);
+            rX = (int) ((tailSize * Math.cos(angle)));
+            rY = (int) ((tailSize * Math.sin(angle)));
+            turning = new Point(rX, rY);
+            turn.add(turning);
+        }
     }
+
+    // Changes the direction the helicopter is pointing
     void move(){
         if(speed > 0 && speed <= 10) {
             if ((center.getX() == x2) && (center.getY() > y2)) {
@@ -387,30 +431,7 @@ class Helicopter {
         }
     }
 
-    void draw(Graphics g) {
-        g.setColor(ColorUtil.rgb(255, 255, 0));
-        g.fillArc(center.getX() - heliSize / 2, center.getY() - heliSize / 2,
-                heliSize, heliSize, 0, 360);
-        for (int i = 1; i < 25; i++) {
-            double angle = Math.toRadians(360 / 24 * i - 105);
-            rX = (int) ((tailSize * Math.cos(angle)));
-            rY = (int) ((tailSize * Math.sin(angle)));
-            turning = new Point(rX, rY);
-            turn.add(turning);
-        }
-
-        x2 = turn.get(currentIndex).getX() + center.getX();
-        y2 = turn.get(currentIndex).getY() + center.getY();
-        g.setColor(ColorUtil.rgb(255, 255, 0));
-        g.drawLine(center.getX(), center.getY(), x2, y2);
-        g.setColor(ColorUtil.WHITE);
-        g.setFont(Font.createSystemFont(FACE_MONOSPACE, STYLE_BOLD, SIZE_MEDIUM));
-        g.drawString("fuel: " + fuel, center.getX() + heliSize,
-                center.getY() + heliSize);
-        g.drawString("water: " + water, center.getX() + heliSize,
-                center.getY() + 20 + heliSize);
-       }
-
+    // Uses the turn ArrayList to change direction
     void turningR() {
         currentIndex++;
         if (currentIndex > turn.size() - 1) {
@@ -418,6 +439,7 @@ class Helicopter {
         }
     }
 
+    // Uses the turn ArrayList to change direction
     void turningL(){
         if(currentIndex == 0){
             currentIndex = turn.size() - 1;
@@ -425,6 +447,7 @@ class Helicopter {
         currentIndex--;
     }
 
+    // changes the speed of the helicopter
     void accelerate(){
         if(speed >= 0 && speed < 10) {
             speed++;
@@ -434,6 +457,7 @@ class Helicopter {
         }
     }
 
+    // changes the speed of the helicopter
     void decelerate() {
         if(speed > 0) {
             speed--;
@@ -443,6 +467,7 @@ class Helicopter {
         }
     }
 
+    // Changes the fuel level
     int fuelConsumption(){
             fuel = fuel - ((speed * speed) + 5);
 
@@ -451,6 +476,8 @@ class Helicopter {
             }
             return fuel;
         }
+
+    // Command method to pick up Water
     void drinkWater(){
         if(speed <= 2){
             water = water + 100;
@@ -459,7 +486,8 @@ class Helicopter {
             water = 1000;
         }
     }
-    // Checks to see if center of helicopter is in the river
+
+    // Checks to see if center of helicopter is over the river
     boolean overRiver(River r){
         if((r.getRiverNorth() + heliSize/2 < center.getY()) &&
                 (r.getRiverSouth() - heliSize/2 > center.getY())){
@@ -469,6 +497,8 @@ class Helicopter {
             return false;
         }
     }
+
+    // Check is helicopter is over the fire
     boolean overFire1(Fire f) {
         if ((((f.getFire1X() - center.getX()) <= heliSize) ||
                 ((center.getX() - f.getFire1X()) <= heliSize)) &&
@@ -480,10 +510,44 @@ class Helicopter {
         }
     }
 
+    // Check to see if Helicopter is over the Helipad
+    boolean isOverHelipad(Helipad pad) {
+        if ((((pad.getHelipadX() - center.getX()) <= heliSize) ||
+                ((center.getX() - pad.getHelipadX()) <= heliSize)) &&
+                (((pad.getHelipadY() - center.getY()) <= heliSize) ||
+                        (center.getY() - pad.getHelipadY() <= heliSize)) && speed == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // Current Water Level
     int getWaterLevel(){
         return water;
     }
+
+    // Drops all water of fire
     void fightFire(){
         water = 0;
     }
+
+    void draw(Graphics g) {
+        g.setColor(ColorUtil.rgb(255, 255, 0));
+        g.fillArc(center.getX() - heliSize / 2, center.getY() - heliSize / 2,
+                heliSize, heliSize, 0, 360);
+
+        x2 = turn.get(currentIndex).getX() + center.getX();
+        y2 = turn.get(currentIndex).getY() + center.getY();
+        g.setColor(ColorUtil.rgb(255, 255, 0));
+        g.drawLine(center.getX(), center.getY(), x2, y2);
+        g.setColor(ColorUtil.WHITE);
+        g.setFont(Font.createSystemFont(FACE_MONOSPACE, STYLE_BOLD, SIZE_MEDIUM));
+        g.drawString("fuel: " + fuel, center.getX() + heliSize,
+                center.getY() + heliSize);
+        g.drawString("water: " + water, center.getX() + heliSize,
+                center.getY() + 20 + heliSize);
+    }
+
+
 }
