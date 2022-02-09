@@ -56,7 +56,7 @@ class Game extends Form implements Runnable{
     public Game(){
         gw = new GameWorld();
         UITimer timer = new UITimer(this);
-        timer.schedule(100, true, this);
+        timer.schedule(150, true, this);
 
         // Exit Key
         addKeyListener('Q', new ActionListener() {
@@ -156,11 +156,11 @@ class GameWorld{
             fires.add(new Fire());
         }
         fires.get(1).setLocationX(Display.getInstance().getDisplayWidth()/2 +
-                Display.getInstance().getDisplayWidth()/4);
+                r.nextInt(Display.getInstance().getDisplayWidth()/4));
         fires.get(1).setLocationY(r.nextInt(
                 Display.getInstance().getDisplayHeight()/4));
         fires.get(2).setLocationX(Display.getInstance().getDisplayWidth()/4 +
-                Display.getInstance().getDisplayWidth()/2);
+                r.nextInt(Display.getInstance().getDisplayWidth()/4));
         fires.get(2).setLocationY(Display.getInstance().getDisplayHeight()/2 +
                 r.nextInt(Display.getInstance().getDisplayHeight()/4));
 
@@ -239,6 +239,8 @@ class GameWorld{
         RESTART.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
+                Game game = new Game();
+                game.show();
 
             }
         });
@@ -253,7 +255,8 @@ class GameWorld{
         dlg.setLayout(new BorderLayout());
         dlg.add(BorderLayout.CENTER, "YOU LOSE!!! Do Your Self A Favor. TRY " +
                 "AGAIN!!!");
-        dlg.add(BorderLayout.SOUTH, EXIT);
+        dlg.add(BorderLayout.EAST, RESTART);
+        dlg.add(BorderLayout.WEST, EXIT);
         dlg.show(Display.getInstance().getDisplayHeight()/24 * 10,
                 Display.getInstance().getDisplayHeight()/24 * 10,
                 Display.getInstance().getDisplayWidth()/24 * 9,
@@ -265,7 +268,8 @@ class GameWorld{
         RESTART.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-
+                Game game = new Game();
+                game.show();
             }
         });
         EXIT.addActionListener(new ActionListener() {
@@ -278,7 +282,8 @@ class GameWorld{
         Dialog dlg = new Dialog("GAME OVER! YOU WIN!!!");
         dlg.setLayout(new BorderLayout());
         dlg.add(BorderLayout.CENTER,"Your High Score was: " + fuel);
-        dlg.add(BorderLayout.SOUTH, EXIT);
+        dlg.add(BorderLayout.EAST, RESTART);
+        dlg.add(BorderLayout.WEST, EXIT);
         dlg.show(Display.getInstance().getDisplayHeight()/24 * 10,
                 Display.getInstance().getDisplayHeight()/24 * 10,
                 Display.getInstance().getDisplayWidth()/24 * 9,
@@ -388,13 +393,13 @@ class Fire {
         g.setColor(ColorUtil.rgb(255, 0, 0));
         g.fillArc(location.getX() - fireSize/4,
                 location.getY() - fireSize/4,
-                fireSize, fireSize,
+                fireSize/2, fireSize/2,
                 0, 360);
         g.setColor(ColorUtil.WHITE);
         g.setFont(Font.createSystemFont(FACE_MONOSPACE,
                                         STYLE_BOLD, SIZE_MEDIUM));
-        g.drawString("" + fireSize, location.getX() + (fireSize * 3/4),
-                location.getY() + (fireSize * 3/4));
+        g.drawString("" + fireSize, location.getX() + (fireSize/4),
+                location.getY() + (fireSize/4));
     }
 
     void setLocationX(int locX) {
@@ -540,10 +545,10 @@ class Helicopter {
 
     // Check is helicopter is over the fire
     boolean overFire(Fire f) {
-        if (((f.getFireX() - f.getFireSize()) < center.getX()) &&
-                ((f.getFireX() + f.getFireSize()) > center.getX()) &&
-                ((f.getFireY() - f.getFireY()) < center.getY()) &&
-                ((f.getFireY() + f.getFireY()) > center.getY()))
+        if ((((f.getFireX() - f.getFireSize()/2)) < center.getX()) &&
+                (((f.getFireX() + f.getFireSize()/2)) > center.getX()) &&
+                (((f.getFireY() - f.getFireY()/2)) < center.getY()) &&
+                (((f.getFireY() + f.getFireY()/2)) > center.getY()))
          {
             return true;
         } else {
