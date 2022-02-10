@@ -56,7 +56,7 @@ class Game extends Form implements Runnable{
     public Game(){
         gw = new GameWorld();
         UITimer timer = new UITimer(this);
-        timer.schedule(150, true, this);
+        timer.schedule(100, true, this);
 
         // Exit Key
         addKeyListener('Q', new ActionListener() {
@@ -151,7 +151,10 @@ class GameWorld{
         river = new River();
         helicopter = new Helicopter();
         fires = new ArrayList<>();
+        deadfires = new ArrayList<>();
         r = new Random();
+        fuel = 25000;
+        water = 0;
         for(int i = 0; i < 3; i++) {
             fires.add(new Fire());
         }
@@ -178,13 +181,11 @@ class GameWorld{
     }
 
     void tick(){
-        deadfires = new ArrayList<>();
         if(!fires.isEmpty()) {
             for (Fire spot: fires) {
                 spot.grow();
             }
         }
-
         helicopter.move();
         fuel = helicopter.fuelConsumption();
         water = helicopter.getWaterLevel();
@@ -253,8 +254,7 @@ class GameWorld{
         });
         Dialog dlg = new Dialog("GAME OVER!");
         dlg.setLayout(new BorderLayout());
-        dlg.add(BorderLayout.CENTER, "YOU LOSE!!! Do Your Self A Favor. TRY " +
-                "AGAIN!!!");
+        dlg.add(BorderLayout.CENTER, "YOU LOSE!!! TRY AGAIN!!!");
         dlg.add(BorderLayout.EAST, RESTART);
         dlg.add(BorderLayout.WEST, EXIT);
         dlg.show(Display.getInstance().getDisplayHeight()/24 * 10,
@@ -333,15 +333,16 @@ class Helipad {
         squareSize = 200;
         circleSize = 150;
         locationCenter = new Point(Display.getInstance().getDisplayWidth()/2,
-                Display.getInstance().getDisplayHeight() - squareSize - squareSize/2 );
+                Display.getInstance().getDisplayHeight() -
+                        squareSize - squareSize/2 );
     }
     // Get Helipads X and Y coordinates
     public int getHelipadX() {
-        return locationCenter.getX();
+        return locationCenter.getX() - squareSize/2;
     }
 
     public int getHelipadY() {
-        return locationCenter.getY();
+        return locationCenter.getY() - squareSize/2;
     }
 
     void draw(Graphics g){
@@ -354,6 +355,9 @@ class Helipad {
                 squareSize, squareSize,5);
     }
 
+    public int getHelipadSize() {
+        return squareSize;
+    }
 }
 
 class Fire {
@@ -374,8 +378,9 @@ class Fire {
         fireSize = fireSize + r.nextInt(5);
     }
 
-    int shrink(int water) {
-        return fireSize = fireSize - water;
+    public int shrink(int water) {
+        fireSize = fireSize - water;
+        return fireSize;
     }
 
     // Gets the Point coordinate for Fires X and Y and the fire's size
@@ -545,10 +550,10 @@ class Helicopter {
 
     // Check is helicopter is over the fire
     boolean overFire(Fire f) {
-        if ((((f.getFireX() - f.getFireSize()/2)) < center.getX()) &&
-                (((f.getFireX() + f.getFireSize()/2)) > center.getX()) &&
-                (((f.getFireY() - f.getFireY()/2)) < center.getY()) &&
-                (((f.getFireY() + f.getFireY()/2)) > center.getY()))
+        if ((f.getFireX() < center.getX()) &&
+                ((f.getFireX() + f.getFireSize()) > center.getX()) &&
+                (f.getFireY() < center.getY()) &&
+                (((f.getFireY() + f.getFireSize()) > center.getY())))
          {
             return true;
         } else {
@@ -558,10 +563,10 @@ class Helicopter {
 
     // Check to see if Helicopter is over the Helipad
     boolean isOverHelipad(Helipad pad) {
-        if ((((pad.getHelipadX() - center.getX()) <= heliSize) ||
-                ((center.getX() - pad.getHelipadX()) <= heliSize)) &&
-                (((pad.getHelipadY() - center.getY()) <= heliSize) ||
-                (center.getY() - pad.getHelipadY() <= heliSize)) && speed == 0)
+        if ((pad.getHelipadX() < center.getX()) &&
+                ((pad.getHelipadX() + pad.getHelipadSize()) > center.getX()) &&
+                (pad.getHelipadY() < center.getY()) &&
+                ((pad.getHelipadY() + pad.getHelipadSize()) > center.getY()) && (speed == 0))
         {
             return true;
         } else {
@@ -576,7 +581,6 @@ class Helicopter {
 
     // Drops all water of fire
     void fightFire(){
-
         water = 0;
     }
 
@@ -593,9 +597,9 @@ class Helicopter {
         g.setColor(ColorUtil.WHITE);
         g.setFont(Font.createSystemFont(FACE_MONOSPACE,
                             STYLE_BOLD, SIZE_MEDIUM));
-        g.drawString("fuel: " + fuel, center.getX() + heliSize,
+        g.drawString("f: " + fuel, center.getX() + heliSize,
                 center.getY() + heliSize);
-        g.drawString("water: " + water, center.getX() + heliSize,
+        g.drawString("w: " + water, center.getX() + heliSize,
                 center.getY() + 20 + heliSize);
     }
 
