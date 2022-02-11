@@ -47,7 +47,6 @@ public class AppMain extends Lifecycle {
         Game game = new Game();
         game.show();
     }
-
 }
 
 class Game extends Form implements Runnable{
@@ -57,75 +56,26 @@ class Game extends Form implements Runnable{
         gw = new GameWorld();
         UITimer timer = new UITimer(this);
         timer.schedule(100, true, this);
-
         // Exit Key
-        addKeyListener('Q', new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent evt) {
-                gw.quit();
-            }
-        });
-
+        addKeyListener('Q', evt -> gw.quit());
         //Left Arrow used to turn the helicopter left
-        addKeyListener(-93, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent evt) {
-                gw.turnLeft();
-            }
-        });
-
+        addKeyListener(-93, evt -> gw.turnLeft());
         // Right Arrow used to turn the helicopter right
-        addKeyListener(-94, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent evt) {
-
-                gw.turnRight();
-            }
-        });
-
+        addKeyListener(-94, evt -> gw.turnRight());
         // Up Arrow to speed up the helicopter
-        addKeyListener(-91, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent evt) {
-
-                gw.speedUp();
-            }
-        });
-
+        addKeyListener(-91, evt -> gw.speedUp());
         // Down Arrow to slow down and stop the helicopter
-        addKeyListener(-92, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent evt) {
-                gw.slowDown();
-            }
-        });
-
+        addKeyListener(-92, evt -> gw.slowDown());
         // dump water
-        addKeyListener('f', new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent evt) {
-            gw.fight();
-            }
-
-        });
-
+        addKeyListener('f', evt -> gw.fight());
         // drink water
-        addKeyListener('d', new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent evt) {
-                gw.drink();
-            }
-        });
-
-
+        addKeyListener('d', evt -> gw.drink());
     }
-
     @Override
     public void run() {
         gw.tick();
         repaint();
     }
-
     public void paint(Graphics g){
         super.paint(g);
         gw.draw(g);
@@ -135,12 +85,14 @@ class Game extends Form implements Runnable{
 class GameWorld{
     private final Button RESTART = new Button("Restart");
     private final Button EXIT = new Button("Exit");
+    final static int DISP_W = Display.getInstance().getDisplayWidth();
+    final static int DISP_H = Display.getInstance().getDisplayHeight();
     private Helipad helipad;
     private River river;
     private Helicopter helicopter;
     private int water, fuel;
     private ArrayList<Fire> fires;
-    private ArrayList <Fire> deadfires;
+    private ArrayList <Fire> deadFires;
     private Random r;
     public GameWorld(){
         init();
@@ -151,27 +103,21 @@ class GameWorld{
         river = new River();
         helicopter = new Helicopter();
         fires = new ArrayList<>();
-        deadfires = new ArrayList<>();
+        deadFires = new ArrayList<>();
         r = new Random();
         fuel = 25000;
         water = 0;
         for(int i = 0; i < 3; i++) {
             fires.add(new Fire());
         }
-        fires.get(1).setLocationX(Display.getInstance().getDisplayWidth()/2 +
-                r.nextInt(Display.getInstance().getDisplayWidth()/4));
-        fires.get(1).setLocationY(r.nextInt(
-                Display.getInstance().getDisplayHeight()/4));
-        fires.get(2).setLocationX(Display.getInstance().getDisplayWidth()/4 +
-                r.nextInt(Display.getInstance().getDisplayWidth()/4));
-        fires.get(2).setLocationY(Display.getInstance().getDisplayHeight()/2 +
-                r.nextInt(Display.getInstance().getDisplayHeight()/4));
-
+        fires.get(1).setLocationX(DISP_W/2 + r.nextInt(DISP_W/4));
+        fires.get(1).setLocationY(r.nextInt(DISP_H/4));
+        fires.get(2).setLocationX(DISP_W/4 + r.nextInt(DISP_W/4));
+        fires.get(2).setLocationY(DISP_H/2 +  r.nextInt(DISP_H/4));
     }
 
     void draw(Graphics g){
-        g.clearRect(0, 0, Display.getInstance().getDisplayWidth(),
-                Display.getInstance().getDisplayHeight());
+        g.clearRect(0, 0, DISP_W, DISP_H);
         helipad.draw(g);
         river.draw(g);
         for(Fire spot : fires) {
@@ -189,14 +135,11 @@ class GameWorld{
         helicopter.move();
         fuel = helicopter.fuelConsumption();
         water = helicopter.getWaterLevel();
-        if(fuel <= 0){
+        if((fuel <= 0) ||
+                (fires.isEmpty() && helicopter.isOverHelipad(helipad))){
             gameOver();
         }
-        if(fires.isEmpty() && helicopter.isOverHelipad(helipad)){
-            youWin();
-        }
-    }
-
+     }
     // method to call helicopter command turn left
     void turnLeft() {
         helicopter.turningL();
@@ -213,81 +156,45 @@ class GameWorld{
     void slowDown()    {
         helicopter.decelerate();
     }
-
     // Method for filling the water tank on helicopter
     void drink(){
         if(helicopter.overRiver(river)) {
             helicopter.drinkWater();
         }
     }
-
     // Method for dropping water on fire
     void fight() {
         for (Fire spot : fires) {
             if (helicopter.overFire(spot)) {
                 if (water > spot.getFireSize()) {
-                    deadfires.add(spot);
+                    deadFires.add(spot);
                 } else {
                     spot.shrink(water);
                 }
             }
         }
-        fires.removeAll(deadfires);
+        fires.removeAll(deadFires);
         helicopter.fightFire();
     }
     // Losing condition Dialog Window
     void gameOver(){
-        RESTART.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                Game game = new Game();
-                game.show();
-
-            }
+        RESTART.addActionListener(actionEvent -> {
+            Game game = new Game();
+            game.show();
         });
-        EXIT.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                quit();
-
-            }
-        });
+        EXIT.addActionListener(actionEvent -> quit());
         Dialog dlg = new Dialog("GAME OVER!");
         dlg.setLayout(new BorderLayout());
-        dlg.add(BorderLayout.CENTER, "YOU LOSE!!! TRY AGAIN!!!");
+        if(fuel <= 0) {
+            dlg.add(BorderLayout.CENTER, "YOU LOSE!!! TRY AGAIN!!!");
+        }
+        else{
+            dlg.add(BorderLayout.CENTER,"Your High Score is: " + fuel);
+        }
         dlg.add(BorderLayout.EAST, RESTART);
         dlg.add(BorderLayout.WEST, EXIT);
-        dlg.show(Display.getInstance().getDisplayHeight()/24 * 10,
-                Display.getInstance().getDisplayHeight()/24 * 10,
-                Display.getInstance().getDisplayWidth()/24 * 9,
-                Display.getInstance().getDisplayHeight()/24 * 9);
-    }
-
-    // Win condition dialog window
-    private void youWin() {
-        RESTART.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                Game game = new Game();
-                game.show();
-            }
-        });
-        EXIT.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                quit();
-
-            }
-        });
-        Dialog dlg = new Dialog("GAME OVER! YOU WIN!!!");
-        dlg.setLayout(new BorderLayout());
-        dlg.add(BorderLayout.CENTER,"Your High Score was: " + fuel);
-        dlg.add(BorderLayout.EAST, RESTART);
-        dlg.add(BorderLayout.WEST, EXIT);
-        dlg.show(Display.getInstance().getDisplayHeight()/24 * 10,
-                Display.getInstance().getDisplayHeight()/24 * 10,
-                Display.getInstance().getDisplayWidth()/24 * 9,
-                Display.getInstance().getDisplayHeight()/24 * 9);
+        dlg.show(DISP_H / 24 * 10, DISP_H / 24 * 10, DISP_W / 24 * 9,
+                DISP_H / 24 * 9);
     }
 
     // Method for exiting the game
@@ -297,23 +204,23 @@ class GameWorld{
 }
 
 class River {
+    private final static int DISP_W = Display.getInstance().getDisplayWidth();
+    private final static int DISP_H = Display.getInstance().getDisplayHeight();
     private Point location;
     private int top, bottom, start, end;
 
     public River(){
-        location = new Point(Display.getInstance().getDisplayWidth()/2,
-                Display.getInstance().getDisplayHeight() * 5/12);
+        location = new Point(DISP_W/2,
+                DISP_H * 5/12);
         start = location.getX() - location.getX();
         end = location.getX() + location.getX();
         top = location.getY() * 4/5;
         bottom = location.getY() * 2/5;
     }
-
     // Returns the Top and Bottom shoreline of River
     int getRiverNorth(){
         return top;
     }
-
     int getRiverSouth(){
         return top + bottom;
     }
@@ -322,27 +229,29 @@ class River {
         g.setColor(ColorUtil.BLUE);
         g.drawRect(start, top, end, bottom);
     }
-
 }
 
 class Helipad {
+    private final static int DISP_W = Display.getInstance().getDisplayWidth();
+    private final static int DISP_H = Display.getInstance().getDisplayHeight();
     private Point locationCenter;
     private int squareSize, circleSize;
 
     public Helipad(){
         squareSize = 200;
         circleSize = 150;
-        locationCenter = new Point(Display.getInstance().getDisplayWidth()/2,
-                Display.getInstance().getDisplayHeight() -
-                        squareSize - squareSize/2 );
+        locationCenter = new Point(DISP_W/2, DISP_H - squareSize -
+                squareSize/2 );
     }
     // Get Helipads X and Y coordinates
     public int getHelipadX() {
         return locationCenter.getX() - squareSize/2;
     }
-
     public int getHelipadY() {
         return locationCenter.getY() - squareSize/2;
+    }
+    public int getHelipadSize() {
+        return squareSize;
     }
 
     void draw(Graphics g){
@@ -354,13 +263,11 @@ class Helipad {
                 locationCenter.getY() - squareSize/2,
                 squareSize, squareSize,5);
     }
-
-    public int getHelipadSize() {
-        return squareSize;
-    }
 }
 
 class Fire {
+    private final static int DISP_W = Display.getInstance().getDisplayWidth();
+    private final static int DISP_H = Display.getInstance().getDisplayHeight();
     private Point location;
     private int fireSize;
     private Random r;
@@ -368,11 +275,9 @@ class Fire {
     public Fire(){
         r = new Random();
         fireSize = r.nextInt(200);
-        location = new Point(Display.getInstance().getDisplayWidth()/4 +
-                r.nextInt(Display.getInstance().getDisplayWidth()/4),
-                r.nextInt(Display.getInstance().getDisplayHeight())/4);
-            }
-
+        location = new Point(DISP_W/4 + r.nextInt(DISP_W/4),
+                r.nextInt(DISP_H)/4);
+    }
     // Increase and decrease fire's size
     void grow(){
         fireSize = fireSize + r.nextInt(5);
@@ -382,7 +287,6 @@ class Fire {
         fireSize = fireSize - water;
         return fireSize;
     }
-
     // Gets the Point coordinate for Fires X and Y and the fire's size
     int getFireX() {
         return location.getX() - fireSize/4;
@@ -393,6 +297,12 @@ class Fire {
     int getFireSize(){
         return fireSize;
     }
+    void setLocationX(int locX) {
+        location.setX(locX);
+    }
+    void setLocationY(int locY){
+        location.setY(locY);
+    }
 
     void draw(Graphics g) {
         g.setColor(ColorUtil.rgb(255, 0, 0));
@@ -401,35 +311,28 @@ class Fire {
                 fireSize/2, fireSize/2,
                 0, 360);
         g.setColor(ColorUtil.WHITE);
-        g.setFont(Font.createSystemFont(FACE_MONOSPACE,
-                                        STYLE_BOLD, SIZE_MEDIUM));
+        g.setFont(Font.createSystemFont(FACE_MONOSPACE, STYLE_BOLD,
+                SIZE_MEDIUM));
         g.drawString("" + fireSize, location.getX() + (fireSize/4),
                 location.getY() + (fireSize/4));
     }
-
-    void setLocationX(int locX) {
-        location.setX(locX);
-    }
-    void setLocationY(int locY){
-        location.setY(locY);
-    }
-
 }
 
 class Helicopter {
-    private Point locationHeli, locationTail, center, turning, speedUp;
-    private int heliSize, tailSize, currentIndex;
+    private final static int DISP_W = Display.getInstance().getDisplayWidth();
+    private final static int DISP_H = Display.getInstance().getDisplayHeight();
+    private Point locationHeli, locationTail, center, turning, forwardPoints;
+    private int heliSize, tailSize, currentIndex, rXs, rYs;
     private int  fuel, rX, rY, speed, x2, y2, water;
-    private ArrayList<Point> turn;
+    private ArrayList<Point> turn, forward;
 
     public Helicopter(){
         heliSize = 50;
         tailSize = 100;
-        locationHeli = new Point(Display.getInstance().getDisplayWidth()/2,
-                Display.getInstance().getDisplayHeight() - 300);
+        locationHeli = new Point(DISP_W/2,
+                DISP_H - 300);
         locationTail = new Point(locationHeli.getX(), locationHeli.getY());
-        center = new Point(Display.getInstance().getDisplayWidth()/2,
-                Display.getInstance().getDisplayHeight() - 300);
+        center = new Point(DISP_W/2, DISP_H - 300);
         turn = new ArrayList<>();
         currentIndex = 0;
         fuel = 25000;
@@ -441,46 +344,20 @@ class Helicopter {
             turn.add(turning);
         }
     }
-
     // Changes the direction the helicopter is pointing
     void move(){
-        if(speed > 0 && speed <= 10) {
-            if ((center.getX() == x2) && (center.getY() > y2)) {
-                center.setY(center.getY() - speed);
-                y2 = y2 -  speed;
-            } else if ((center.getX() == x2) && (center.getY() < y2)) {
-                center.setY(center.getY() + speed);
-                y2 = y2 + speed;
-            } else if ((center.getY() == y2) && (center.getX() > x2)) {
-                center.setX(center.getX() - speed);
-                x2 = x2 - speed;
-            } else if ((center.getY() == y2) && (center.getX() < x2)) {
-                center.setX(center.getX() + speed);
-                x2 = x2 + speed;
-            } else if ((center.getX() > x2) && (center.getY() > y2)) {
-                center.setY(center.getY() - speed);
-                y2 = y2 - speed;
-                center.setX(center.getX() - speed);
-                x2 = x2 - speed;
-            } else if ((center.getX() > x2) && (center.getY() < y2)) {
-                center.setY(center.getY() + speed);
-                y2 = y2 + speed;
-                center.setX(center.getX() - speed);
-                x2 = x2 - speed;
-            } else if ((center.getX() < x2) && (center.getY() > y2)) {
-                center.setY(center.getY() - speed);
-                y2 = y2 - speed;
-                center.setX(center.getX() + speed);
-                x2 = x2 + speed;
-            } else if ((center.getX() < x2) && (center.getY() < y2)) {
-                center.setY(center.getY() + speed);
-                y2 = y2 + speed;
-                center.setX(center.getX() + speed);
-                x2 = x2 + speed;
-            }
+        forward = new ArrayList<>();
+        for (int i = 1; i < 25; i++) {
+            double angle = Math.toRadians(360 / 24 * i - 105);
+            rXs = (int)(Math.cos(angle) * speed);
+            rYs =  (int)(Math.sin(angle) * speed);
+            forwardPoints = new Point(rXs, rYs);
+            forward.add(forwardPoints);
         }
-    }
+            center.setX(center.getX() + (forward.get(currentIndex).getX()));
+            center.setY(center.getY() + (forward.get(currentIndex).getY()));
 
+    }
     // Uses the turn ArrayList to change direction
     void turningR() {
         currentIndex++;
@@ -488,7 +365,6 @@ class Helicopter {
             currentIndex = 0;
         }
     }
-
     // Uses the turn ArrayList to change direction
     void turningL(){
         if(currentIndex == 0){
@@ -496,7 +372,6 @@ class Helicopter {
         }
         currentIndex--;
     }
-
     // changes the speed of the helicopter
     void accelerate(){
         if(speed >= 0 && speed < 10) {
@@ -506,7 +381,6 @@ class Helicopter {
             speed = 10;
         }
     }
-
     // changes the speed of the helicopter
     void decelerate() {
         if(speed > 0) {
@@ -516,7 +390,6 @@ class Helicopter {
             speed = 0;
         }
     }
-
     // Changes the fuel level
     int fuelConsumption(){
             fuel = fuel - ((speed * speed) + 5);
@@ -525,8 +398,7 @@ class Helicopter {
                 fuel = 0;
             }
             return fuel;
-        }
-
+    }
     // Command method to pick up Water
     void drinkWater(){
         if(speed <= 2){
@@ -536,7 +408,6 @@ class Helicopter {
             water = 1000;
         }
     }
-
     // Checks to see if center of helicopter is over the river
     boolean overRiver(River r){
         if((r.getRiverNorth() + heliSize/2 < center.getY()) &&
@@ -547,7 +418,6 @@ class Helicopter {
             return false;
         }
     }
-
     // Check is helicopter is over the fire
     boolean overFire(Fire f) {
         if ((f.getFireX() < center.getX()) &&
@@ -560,48 +430,33 @@ class Helicopter {
             return false;
         }
     }
-
     // Check to see if Helicopter is over the Helipad
     boolean isOverHelipad(Helipad pad) {
-        if ((pad.getHelipadX() < center.getX()) &&
+        return (pad.getHelipadX() < center.getX()) &&
                 ((pad.getHelipadX() + pad.getHelipadSize()) > center.getX()) &&
                 (pad.getHelipadY() < center.getY()) &&
-                ((pad.getHelipadY() + pad.getHelipadSize()) > center.getY()) && (speed == 0))
-        {
-            return true;
-        } else {
-            return false;
-        }
+                ((pad.getHelipadY() + pad.getHelipadSize()) > center.getY()) &&
+                (speed == 0);
     }
-
     // Current Water Level
-    int getWaterLevel(){
-        return water;
-    }
-
+    int getWaterLevel(){ return water; }
     // Drops all water of fire
-    void fightFire(){
-        water = 0;
-    }
+    void fightFire(){ water = 0; }
 
     void draw(Graphics g) {
         g.setColor(ColorUtil.rgb(255, 255, 0));
         g.fillArc(center.getX() - heliSize / 2,
                 center.getY() - heliSize / 2,
                 heliSize, heliSize, 0, 360);
-
         x2 = turn.get(currentIndex).getX() + center.getX();
         y2 = turn.get(currentIndex).getY() + center.getY();
-        g.setColor(ColorUtil.rgb(255, 255, 0));
         g.drawLine(center.getX(), center.getY(), x2, y2);
         g.setColor(ColorUtil.WHITE);
-        g.setFont(Font.createSystemFont(FACE_MONOSPACE,
-                            STYLE_BOLD, SIZE_MEDIUM));
+        g.setFont(Font.createSystemFont(FACE_MONOSPACE, STYLE_BOLD,
+                SIZE_MEDIUM));
         g.drawString("f: " + fuel, center.getX() + heliSize,
                 center.getY() + heliSize);
         g.drawString("w: " + water, center.getX() + heliSize,
                 center.getY() + 20 + heliSize);
     }
-
-
 }
