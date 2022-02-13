@@ -90,7 +90,7 @@ class GameWorld{
     private Helipad helipad;
     private River river;
     private Helicopter helicopter;
-    private int water, fuel;
+    private int water, fuel, ticks;
     private ArrayList<Fire> fires;
     private ArrayList <Fire> deadFires;
     private Random r;
@@ -114,6 +114,7 @@ class GameWorld{
         fires.get(1).setLocationY(r.nextInt(DISP_H/4));
         fires.get(2).setLocationX(DISP_W/4 + r.nextInt(DISP_W/4));
         fires.get(2).setLocationY(DISP_H/2 +  r.nextInt(DISP_H/4));
+        ticks = 0;
     }
 
     void draw(Graphics g){
@@ -127,9 +128,12 @@ class GameWorld{
     }
 
     void tick(){
-        if(!fires.isEmpty()) {
-            for (Fire spot: fires) {
-                spot.grow();
+        ticks++;
+        if(ticks % 3 == 0) {
+            if (!fires.isEmpty()) {
+                for (Fire spot : fires) {
+                    spot.grow();
+                }
             }
         }
         helicopter.move();
@@ -166,7 +170,7 @@ class GameWorld{
     void fight() {
         for (Fire spot : fires) {
             if (helicopter.overFire(spot)) {
-                if (water > spot.getFireSize()) {
+                if ((water/2) > spot.getFireSize()) {
                     deadFires.add(spot);
                 } else {
                     spot.shrink(water);
@@ -284,7 +288,7 @@ class Fire {
     }
 
     public int shrink(int water) {
-        fireSize = fireSize - water;
+        fireSize = fireSize - (water/2);
         return fireSize;
     }
     // Gets the Point coordinate for Fires X and Y and the fire's size
@@ -401,7 +405,7 @@ class Helicopter {
     }
     // Command method to pick up Water
     void drinkWater(){
-        if(speed <= 2){
+        if(speed < 3){
             water = water + 100;
             }
         if(water >= 1000){
